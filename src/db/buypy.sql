@@ -21,7 +21,7 @@ CREATE TABLE `Client`(
     firstname       VARCHAR(250) NOT NULL,
     surname         VARCHAR(250) NOT NULL,
     email           VARCHAR(50) NOT NULL UNIQUE,
-    `password`      CHAR(64) NOT NULL,
+    `password`      CHAR(64) NOT NULL COMMENT 'Holds the hashed password',
     address         VARCHAR(100) NOT NULL,
     zip_code        SMALLINT UNSIGNED NOT NULL,
     city            VARCHAR(30) NOT NULL,
@@ -112,8 +112,89 @@ CREATE TABLE `Order`(
     payment_card_expiration     DATE NOT NULL,
     client_id       INT NOT NULL,
 
+    -- Isto não é possível
+    -- CONSTRAINT ExpirationDate CHECK(payment_card_expiration >= CURRENT_DATE),
+    
     FOREIGN KEY ClientFK (client_id) REFERENCES `Client`(id)
 )//
+
+
+DROP TRIGGER IF EXISTS ValidateOrder
+//
+CREATE TRIGGER ValidateOrder BEFORE INSERT ON `Order`
+FOR EACH ROW 
+BEGIN
+    DECLARE INVALID_EXPIRATION_DATE CONDITION FOR SQLSTATE '45002';
+    IF NEW.payment_card_expiration < CURDATE() THEN
+        SIGNAL INVALID_EXPIRATION_DATE
+            SET MESSAGE_TEXT = 'Invalid card expiration date';
+    END IF;
+END//
+
+
+DROP TABLE IF EXISTS Product
+//
+CREATE TABLE Product(
+    id              CHAR(10) PRIMARY KEY,
+    quantity        INT UNSIGNED NOT NULL,
+    price           DECIMAL(10,2) NOT NULL CHECK(price >= 0),
+    vat             DECIMAL(4,2) CHECK(vat BETWEEN 0 AND 100),
+    score           TINYINT CHECK(score BETWEEN 1 AND 5),
+    product_image   VARCHAR(1000) COMMENT 'URL for the image',
+    active          BOOL NOT NULL DEFAULT TRUE,
+    reason          VARCHAR(500) COMMENT 'Why the account is active/inactive'
+)//
+
+
+DROP TABLE IF EXISTS Book
+//
+CREATE TABLE Book(
+    product_id          CHAR(10) PRIMARY KEY,
+    isbn13              CHAR(20) NOT NULL UNIQUE,
+    title               VARCHAR(50) NOT NULL,
+    genre               VARCHAR(50) NOT NULL,
+    publisher           VARCHAR(100) NOT NULL,
+    publication_date    DATE NOT NULL,
+
+    FOREIGN KEY ProductFK (product_id) REFERENCES Product(id)
+        ON UPDATE CASCADE ON DELETE CASCADE,
+
+    CONSTRAINT ISBN13Chk CHECK(isbn13 RLIKE '^[0-9\-]+$')
+)//
+
+DROP TRIGGER IF EXISTS ValidateBook
+//
+CREATE TRIGGER ValidateBook BEFORE INSERT ON Book
+FOR EACH ROW
+BEGIN
+	CALL ValidateISBN13(NEW.isbn13);
+END//
+
+CREATE PROCEDURE ValidateISBN13(IN isbn13 VARCHAR(20)) 
+BEGIN
+    DECLARE DADOS_INVALIDOS CONDITION FOR SQLSTATE '45023';    
+    DECLARE i TINYINT UNSIGNED DEFAULT 1;
+    DECLARE s SMALLINT UNSIGNED DEFAULT 0;
+
+    SET isbn13 = REPLACE(isbn13, '-', '');
+    -- SET isbn13 = REPLACE(isbn13, ' ', '');
+    -- SET isbn13 = REPLACE(isbn13, '_', '');
+
+    IF isbn13 NOT RLIKE '^[0-9]{13}$' THEN    
+        SIGNAL DADOS_INVALIDOS 
+           SET MESSAGE_TEXT = 'Invalid ISBN-13';
+    END IF;
+
+    WHILE i < 14 DO
+        SET s = s + SUBSTRING(isbn13, i, 1) * IF(i % 2 = 1, 1, 3);
+        SET i = i + 1;
+    END WHILE;
+
+    IF s % 10 <> 0 THEN
+        SIGNAL DADOS_INVALIDOS 
+           SET MESSAGE_TEXT = 'Invalid ISBN-13';
+    END IF; 
+END//
 
 
 /*
