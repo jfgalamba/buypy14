@@ -14,10 +14,11 @@ INSERT INTO `Client`
         address, zip_code, city, country,
         phone_number, birthdate)
 VALUES
-    ('Alberto', 'Antunes', 'alb@mail.com', '123abC',
+    ('Alberto', 'Antunes', 'alb@mail.com', '123abC!',
         'Rua do Almada, n. 23', 9877, 'Lisboa', 'Portugal',
         '351213789123', '1981-05-23'),
-    ('Arnaldo', 'Avelar', 'arnaldo@coldmail.com', '123abC',
+        
+    ('Arnaldo', 'Avelar', 'arnaldo@coldmail.com', '456deF!',
         'Av. América, n. 23', 2877, 'Porto', 'Portugal',
         '351213789123', '1981-05-23')
 ;
