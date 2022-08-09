@@ -34,7 +34,7 @@ CREATE TABLE `Client`(
     CONSTRAINT EmailChk CHECK(email RLIKE "[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?")
     -- CONSTRAINT EmailChk CHECK(email RLIKE "^[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,}$"),
 
-	-- Exemplos de CONSTRAINTs para a password mas que não podem aqui ficar por causa
+    -- Exemplos de CONSTRAINTs para a password mas que não podem aqui ficar por causa
     -- do hashing da pwd que é feito no trigger
     
     -- CONSTRAINT PasswdChk CHECK(`password` RLIKE "(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!$#?%]).{6,}")
