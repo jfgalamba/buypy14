@@ -167,15 +167,122 @@ DROP TRIGGER IF EXISTS ValidateBook
 CREATE TRIGGER ValidateBook BEFORE INSERT ON Book
 FOR EACH ROW
 BEGIN
-	CALL ValidateISBN13(NEW.isbn13);
+    DECLARE DADOS_INVALIDOS CONDITION FOR SQLSTATE '45023';
+    IF NOT ValidISBN13(NEW.isbn13) THEN
+        SIGNAL DADOS_INVALIDOS 
+            SET MESSAGE_TEXT = 'Invalid ISBN-13';
+    END IF;
 END//
 
+/*
+ * See https://en.wikipedia.org/wiki/ISBN#ISBN-13_check_digit_calculation
+ */
+DROP FUNCTION IF EXISTS ValidISBN13
+//
+CREATE FUNCTION ValidISBN13(isbn13 VARCHAR(20))
+RETURNS BOOL
+DETERMINISTIC
+BEGIN
+    DECLARE i TINYINT UNSIGNED DEFAULT 1;
+    DECLARE s SMALLINT UNSIGNED DEFAULT 0;
+
+    SET isbn13 = REPLACE(isbn13, '-', '');
+    -- SET isbn13 = REPLACE(isbn13, ' ', '');
+    -- SET isbn13 = REPLACE(isbn13, '_', '');
+
+    IF isbn13 NOT RLIKE '^[0-9]{13}$' THEN
+        RETURN FALSE;
+    END IF;
+
+    WHILE i < 14 DO
+        SET s = s + SUBSTRING(isbn13, i, 1) * IF(i % 2 = 1, 1, 3);
+        SET i = i + 1;
+    END WHILE;
+
+    RETURN s % 10 = 0;
+    -- IF s % 10 <> 0 THEN
+    --     RETURN FALSE;
+    -- END IF; 
+    -- RETURN TRUE;
+END//
+
+/*
+ * O NIF tem 9 dígitos, sendo o último o digito de controlo. Para ser calculado o 
+ * digito de controlo:
+ * 
+ * Multiplique: 
+ *     o 8.º dígito por 2, 
+ *     o 7.º dígito por 3, 
+ *     o 6.º dígito por 4, 
+ *     o 5.º dígito por 5, 
+ *     o 4.º dígito por 6, 
+ *     o 3.º dígito por 7, 
+ *     o 2.º dígito por 8 e 
+ *     o 1.º dígito por 9;
+ * 
+ * Some os resultados;
+ * 
+ * Calcule o resto da divisão do número por 11;
+ * 
+ * Se o resto for 0 (zero) ou 1 (um) o dígito de controlo será 0 (zero);
+ * Se for outro qualquer algarismo X, o dígito de controlo será o resultado 
+ * da subtracção 11 - X.
+ */
+
+DROP FUNCTION IF EXISTS ValidNIF
+//
+CREATE FUNCTION ValidNIF(NIF CHAR(9))
+RETURNS BOOL
+DETERMINISTIC
+BEGIN
+    DECLARE i INT DEFAULT 1;
+    DECLARE multiplicador INT DEFAULT 9;
+    DECLARE Soma INT DEFAULT 0;
+    DECLARE Resto INT DEFAULT 0;
+    DECLARE DigControlo INT DEFAULT 0;
+
+    IF NIF NOT RLIKE '^[0-9]{9}$' THEN
+        RETURN FALSE;
+    END IF;
+
+    WHILE i < LENGTH(NIF) DO 
+        SET Soma = Soma + SUBSTRING(NIF, i, 1) * multiplicador;
+        SET multiplicador = multiplicador - 1;
+        SET i = i + 1;
+    END WHILE;
+    
+    SET Resto = Soma % 11;
+    SET DigControlo = SUBSTRING(NIF, 9, 1);
+    
+    IF Resto IN (0, 1) THEN
+        RETURN DigControlo = 0;
+    END IF;
+    RETURN DigControlo = 11 - Resto;
+END//
+
+/*
+    FRAGMENTOS DE CÓDIGO EXEMPLIFICATIVOS
+
+    -- delivery_method VARCHAR(10) DEFAULT 'regular' 
+    --                 CHECK(delivery_method IN ('regular', 'urgent')),
+-- SET @pwd := 'aBcde6'
+-- //
+-- SELECT     LENGTH(@pwd) >= 6
+-- 	   AND @pwd RLIKE BINARY '[a-z]'
+--        AND @pwd RLIKE BINARY '[A-Z]' 
+--        AND @pwd RLIKE BINARY '[0-9]'
+-- //
+
+*/
+
+/*
 CREATE PROCEDURE ValidateISBN13(IN isbn13 VARCHAR(20)) 
 BEGIN
     DECLARE DADOS_INVALIDOS CONDITION FOR SQLSTATE '45023';    
     DECLARE i TINYINT UNSIGNED DEFAULT 1;
     DECLARE s SMALLINT UNSIGNED DEFAULT 0;
 
+	-- See https://en.wikipedia.org/wiki/ISBN#ISBN-13_check_digit_calculation
     SET isbn13 = REPLACE(isbn13, '-', '');
     -- SET isbn13 = REPLACE(isbn13, ' ', '');
     -- SET isbn13 = REPLACE(isbn13, '_', '');
@@ -195,19 +302,4 @@ BEGIN
            SET MESSAGE_TEXT = 'Invalid ISBN-13';
     END IF; 
 END//
-
-
-/*
-    FRAGMENTOS DE CÓDIGO EXEMPLIFICATIVOS
-
-    -- delivery_method VARCHAR(10) DEFAULT 'regular' 
-    --                 CHECK(delivery_method IN ('regular', 'urgent')),
--- SET @pwd := 'aBcde6'
--- //
--- SELECT     LENGTH(@pwd) >= 6
--- 	   AND @pwd RLIKE BINARY '[a-z]'
---        AND @pwd RLIKE BINARY '[A-Z]' 
---        AND @pwd RLIKE BINARY '[0-9]'
--- //
-
 */
