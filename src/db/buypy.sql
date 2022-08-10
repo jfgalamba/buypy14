@@ -145,6 +145,21 @@ CREATE TABLE Product(
     reason          VARCHAR(500) COMMENT 'Why the account is active/inactive'
 )//
 
+CREATE TRIGGER BeforeNewOrderedItem BEFORE INSERT ON `Ordered_Item`
+FOR EACH ROW 
+BEGIN
+    DECLARE prod_price      DECIMAL(10,2);
+    DECLARE prod_quantity   INT UNSIGNED;
+    DECLARE vat             DECIMAL(4,2)
+
+    SELECT  price, quantity, vat 
+    INTO    prod_price, prod_quantity, vat
+    FROM    Product
+    WHERE   id = NEW.product_id;
+
+    NEW.vat_amount = ...;
+END//
+
 
 DROP TABLE IF EXISTS Book
 //
