@@ -114,7 +114,7 @@ CREATE TABLE `Order`(
 
     -- Isto não é possível
     -- CONSTRAINT ExpirationDate CHECK(payment_card_expiration >= CURRENT_DATE),
-    
+
     FOREIGN KEY ClientFK (client_id) REFERENCES `Client`(id)
 )//
 
@@ -200,10 +200,6 @@ BEGIN
     END WHILE;
 
     RETURN s % 10 = 0;
-    -- IF s % 10 <> 0 THEN
-    --     RETURN FALSE;
-    -- END IF; 
-    -- RETURN TRUE;
 END//
 
 /*
@@ -276,19 +272,19 @@ END//
 */
 
 /*
-CREATE PROCEDURE ValidateISBN13(IN isbn13 VARCHAR(20)) 
+CREATE PROCEDURE ValidateISBN13(IN isbn13 VARCHAR(20))
 BEGIN
-    DECLARE DADOS_INVALIDOS CONDITION FOR SQLSTATE '45023';    
+    DECLARE INVALID_ISBN13 CONDITION FOR SQLSTATE '45023';
     DECLARE i TINYINT UNSIGNED DEFAULT 1;
     DECLARE s SMALLINT UNSIGNED DEFAULT 0;
 
-	-- See https://en.wikipedia.org/wiki/ISBN#ISBN-13_check_digit_calculation
+    -- See https://en.wikipedia.org/wiki/ISBN#ISBN-13_check_digit_calculation
     SET isbn13 = REPLACE(isbn13, '-', '');
     -- SET isbn13 = REPLACE(isbn13, ' ', '');
     -- SET isbn13 = REPLACE(isbn13, '_', '');
 
-    IF isbn13 NOT RLIKE '^[0-9]{13}$' THEN    
-        SIGNAL DADOS_INVALIDOS 
+    IF isbn13 NOT RLIKE '^[0-9]{13}$' THEN
+        SIGNAL INVALID_ISBN13 
            SET MESSAGE_TEXT = 'Invalid ISBN-13';
     END IF;
 
@@ -298,7 +294,7 @@ BEGIN
     END WHILE;
 
     IF s % 10 <> 0 THEN
-        SIGNAL DADOS_INVALIDOS 
+        SIGNAL INVALID_ISBN13 
            SET MESSAGE_TEXT = 'Invalid ISBN-13';
     END IF; 
 END//

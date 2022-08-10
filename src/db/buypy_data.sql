@@ -45,8 +45,6 @@ VALUES
     (121, 'DR. ALBERTO ANTUNES', '2023-05-23', (SELECT id FROM `Client` WHERE firstname = 'alberto' LIMIT 1))
 ;
 
-
-
 /*
 SELECT * FROM `Client`;
 SELECT * FROM `Order`;
