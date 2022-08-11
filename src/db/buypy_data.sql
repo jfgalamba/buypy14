@@ -46,6 +46,18 @@ VALUES
 ;
 
 /*
+ * Create initial OPERATOR accounts.
+ */
+
+INSERT INTO `Operator` 
+    (firstname, surname, email, `password`)
+VALUES
+    ('Pedro', 'Pereira', 'pedro@mail.com', '123abC!'),
+    ('Paulo', 'Pacheco', 'paulo@coldmail.com', '456deF!')
+;
+
+ 
+/*
 SELECT * FROM `Client`;
 SELECT * FROM `Order`;
 

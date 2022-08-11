@@ -31,7 +31,7 @@ CREATE TABLE `Client`(
     birthdate       DATE NOT NULL,
     is_active       BOOLEAN DEFAULT TRUE,
 
-    CONSTRAINT EmailChk CHECK(email RLIKE "[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?")
+    CONSTRAINT ClientEmailChk CHECK(email RLIKE "[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?")
     -- CONSTRAINT EmailChk CHECK(email RLIKE "^[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,}$"),
 
     -- Exemplos de CONSTRAINTs para a password mas que não podem aqui ficar por causa
@@ -145,12 +145,13 @@ CREATE TABLE Product(
     reason          VARCHAR(500) COMMENT 'Why the account is active/inactive'
 )//
 
+/*
 CREATE TRIGGER BeforeNewOrderedItem BEFORE INSERT ON `Ordered_Item`
 FOR EACH ROW 
 BEGIN
     DECLARE prod_price      DECIMAL(10,2);
     DECLARE prod_quantity   INT UNSIGNED;
-    DECLARE vat             DECIMAL(4,2)
+    DECLARE vat             DECIMAL(4,2);
 
     SELECT  price, quantity, vat 
     INTO    prod_price, prod_quantity, vat
@@ -159,6 +160,7 @@ BEGIN
 
     -- NEW.vat_amount = ...;
 END//
+*/
 
 DROP TABLE IF EXISTS Book
 //
@@ -269,6 +271,77 @@ BEGIN
     END IF;
     RETURN DigControlo = 11 - Resto;
 END//
+
+DROP TABLE IF EXISTS `Operator`
+//
+CREATE TABLE `Operator`(
+    id              INT PRIMARY KEY AUTO_INCREMENT,
+    firstname       VARCHAR(250) NOT NULL,
+    surname         VARCHAR(250) NOT NULL,
+    email           VARCHAR(50) NOT NULL UNIQUE,
+    `password`      CHAR(64) NOT NULL COMMENT 'Holds the hashed password',
+
+    CONSTRAINT OperatorEmailChk CHECK(email RLIKE "[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?")
+)//
+
+DROP TRIGGER IF EXISTS BeforeNewOperator
+//
+CREATE TRIGGER BeforeNewOperator BEFORE INSERT ON `Operator`
+FOR EACH ROW
+BEGIN
+    CALL ValidateOperator(NEW.`password`);
+END//
+
+DROP TRIGGER IF EXISTS BeforeUpdatingOperator
+//
+CREATE TRIGGER BeforeUpdatingOperator BEFORE UPDATE ON `Operator`
+FOR EACH ROW
+BEGIN
+    CALL ValidateOperator(NEW.`password`);
+END//
+
+DROP PROCEDURE IF EXISTS ValidateOperator
+//
+CREATE PROCEDURE ValidateOperator(
+    INOUT `password`  CHAR(64)
+)
+BEGIN
+    DECLARE INVALID_PASSWORD CONDITION FOR SQLSTATE '45001';
+
+    -- We have to this, and not with CHECK CONSTRAINT because
+    -- by that time, the password is already hashed (see below)
+    -- The password can only be hashed here, in this trigger.
+    IF `password` NOT RLIKE "(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!$#?%]).{6,}" THEN
+        SIGNAL INVALID_PASSWORD
+            SET MESSAGE_TEXT = 'Invalid password';
+    END IF;
+
+    SET `password` := SHA2(`password`, 256);
+END//
+
+/*
+ * DATABASE USERS AND ACCOUNTS
+ */
+ 
+DROP USER IF EXISTS 'web_client'@'10.10.10.%'
+//
+CREATE USER 'web_client'@'10.10.10.%' IDENTIFIED BY 'MKlio182$'
+//
+
+DROP USER IF EXISTS 'operator'@'localhost'
+//
+CREATE USER 'operator'@'localhost' IDENTIFIED BY 'abc'
+//
+
+DROP USER IF EXISTS 'operator'@'%'
+//
+CREATE USER 'operator'@'%' IDENTIFIED BY 'abc'
+//
+
+GRANT ALL PRIVILEGES ON BuyPy.* TO 'operator'@'localhost' WITH GRANT OPTION
+//
+GRANT ALL PRIVILEGES ON BuyPy.* TO 'operator'@'%' WITH GRANT OPTION
+//
 
 /*
     FRAGMENTOS DE CÓDIGO EXEMPLIFICATIVOS
