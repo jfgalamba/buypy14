@@ -56,7 +56,9 @@ VALUES
     ('Paulo', 'Pacheco', 'paulo@coldmail.com', '456deF!')
 ;
 
- 
+-- SELECT * FROM `Operator`;
+
+
 /*
 SELECT * FROM `Client`;
 SELECT * FROM `Order`;

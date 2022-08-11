@@ -319,6 +319,22 @@ BEGIN
     SET `password` := SHA2(`password`, 256);
 END//
 
+DROP PROCEDURE IF EXISTS AuthenticateOperator
+//
+CREATE PROCEDURE AuthenticateOperator(
+    IN operator_email       VARCHAR(50),
+    IN operator_passwd      CHAR(64)
+)
+BEGIN
+    SELECT firstname, surname
+    FROM `Operator`
+    WHERE email = operator_email
+    AND  `password` = operator_passwd;
+END//
+
+-- CALL AuthenticateOperator('pedro@mail.com', SHA2('123abC!', 256))
+-- //
+
 /*
  * DATABASE USERS AND ACCOUNTS
  */
@@ -329,7 +345,7 @@ CREATE USER 'web_client'@'10.10.10.%' IDENTIFIED BY 'MKlio182$'
 //
 
 DROP USER IF EXISTS 'operator'@'localhost'
-//
+//  
 CREATE USER 'operator'@'localhost' IDENTIFIED BY 'abc'
 //
 
