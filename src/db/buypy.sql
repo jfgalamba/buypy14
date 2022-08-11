@@ -157,9 +157,8 @@ BEGIN
     FROM    Product
     WHERE   id = NEW.product_id;
 
-    NEW.vat_amount = ...;
+    -- NEW.vat_amount = ...;
 END//
-
 
 DROP TABLE IF EXISTS Book
 //
